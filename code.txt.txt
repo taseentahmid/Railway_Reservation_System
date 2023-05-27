@@ -1,0 +1,332 @@
+#include <iostream>
+#include <fstream>
+#include <string>
+
+using namespace std;
+
+class Passenger {
+private:
+    string name;
+    string gender;
+    int age;
+
+public:
+    Passenger(const string& name, const string& gender, int age)
+        : name(name), gender(gender), age(age) {}
+
+    string getName() const {
+        return name;
+    }
+
+    string getGender() const {
+        return gender;
+    }
+
+    int getAge() const {
+        return age;
+    }
+};
+
+class Train {
+private:
+    string trainName;
+    string source;
+    string destination;
+    int capacity;
+    int availableSeats;
+
+public:
+    Train(const string& trainName, const string& source, const string& destination, int capacity)
+        : trainName(trainName), source(source), destination(destination), capacity(capacity), availableSeats(capacity) {}
+
+    string getTrainName() const {
+        return trainName;
+    }
+
+    string getSource() const {
+        return source;
+    }
+
+    string getDestination() const {
+        return destination;
+    }
+
+    int getCapacity() const {
+        return capacity;
+    }
+
+    int getAvailableSeats() const {
+        return availableSeats;
+    }
+
+    void bookTicket() {
+        if (availableSeats > 0) {
+            string name, gender;
+            int age;
+
+            cout << "Enter passenger name: ";
+            cin.ignore();
+            getline(cin, name);
+
+            cout << "Enter passenger gender: ";
+            getline(cin, gender);
+
+            cout << "Enter passenger age: ";
+            cin >> age;
+
+            Passenger passenger(name, gender, age);
+            savePassengerData(passenger);
+
+            availableSeats--;
+            cout << "Ticket booked successfully." << endl;
+        } else {
+            cout << "No available seats on this train." << endl;
+        }
+    }
+
+    void displayPassengerList() const {
+        ifstream inputFile(getTrainDataFilePath());
+        if (inputFile.is_open()) {
+            string line;
+            while (getline(inputFile, line)) {
+                string name = line;
+                getline(inputFile, line);
+                string gender = line;
+                getline(inputFile, line);
+                int age = stoi(line);
+
+                Passenger passenger(name, gender, age);
+                displayPassengerInfo(passenger);
+            }
+
+            inputFile.close();
+        } else {
+            cout << "Unable to open file for reading." << endl;
+        }
+    }
+
+private:
+    string getTrainDataFilePath() const {
+        return trainName + ".txt";
+    }
+
+    void savePassengerData(const Passenger& passenger) {
+        ofstream file(getTrainDataFilePath(), ios::app);
+        if (file.is_open()) {
+            file << passenger.getName() << endl;
+            file << passenger.getGender() << endl;
+            file << passenger.getAge() << endl;
+            file.close();
+        } else {
+            cout << "Unable to open file for writing." << endl;
+        }
+    }
+
+    void displayPassengerInfo(const Passenger& passenger) const {
+        cout << "Name: " << passenger.getName() << endl;
+        cout << "Gender: " << passenger.getGender() << endl;
+        cout << "Age: " << passenger.getAge() << endl;
+        cout << "---------------------" << endl;
+    }
+};
+
+class RailwayReservationSystem {
+public:
+    void addTrain() {
+        string trainName, source, destination;
+        int capacity;
+
+        cout << "Enter train name: ";
+        cin.ignore();
+        getline(cin, trainName);
+
+        cout << "Enter source station: ";
+        getline(cin, source);
+
+        cout << "Enter destination station: ";
+        getline(cin, destination);
+
+        cout << "Enter train capacity: ";
+        cin >> capacity;
+
+        Train train(trainName, source, destination, capacity);
+        saveTrainData(train);
+
+        cout << "Train added successfully." << endl;
+    }
+
+    void bookTicket() {
+        string trainName;
+        cout << "Enter train name: ";
+        cin.ignore();
+        getline(cin, trainName);
+
+        ifstream inputFile(getTrainDataFilePath(trainName));
+        if (inputFile.is_open()) {
+            string line;
+            getline(inputFile, line); // Skip trainName
+            getline(inputFile, line); // Skip source
+            getline(inputFile, line); // Skip destination
+            getline(inputFile, line); // Read capacity
+            int capacity = stoi(line);
+            getline(inputFile, line); // Read availableSeats
+            int availableSeats = stoi(line);
+
+            if (availableSeats > 0) {
+                availableSeats--;
+                updateAvailableSeats(trainName, availableSeats);
+                string name, gender;
+                int age;
+
+                cout << "Enter passenger name: ";
+                getline(cin, name);
+
+                cout << "Enter passenger gender: ";
+                getline(cin, gender);
+
+                cout << "Enter passenger age: ";
+                cin >> age;
+
+                Passenger passenger(name, gender, age);
+                savePassengerData(trainName, passenger);
+
+                cout << "Ticket booked successfully." << endl;
+            } else {
+                cout << "No available seats on this train." << endl;
+            }
+
+            inputFile.close();
+        } else {
+            cout << "Train not found." << endl;
+        }
+    }
+
+    void displayPassengerList() const {
+        string trainName;
+        cout << "Enter train name: ";
+        cin.ignore();
+        getline(cin, trainName);
+
+        ifstream inputFile(getTrainDataFilePath(trainName));
+        if (inputFile.is_open()) {
+            string line;
+            getline(inputFile, line); // Skip trainName
+            getline(inputFile, line); // Skip source
+            getline(inputFile, line); // Skip destination
+            getline(inputFile, line); // Skip capacity
+            getline(inputFile, line); // Read availableSeats
+
+            int availableSeats = stoi(line);
+            if (availableSeats == 0) {
+                cout << "No passengers on this train." << endl;
+            } else {
+                while (getline(inputFile, line)) {
+                    string name = line;
+                    getline(inputFile, line);
+                    string gender = line;
+                    getline(inputFile, line);
+                    int age = stoi(line);
+
+                    Passenger passenger(name, gender, age);
+                    displayPassengerInfo(passenger);
+                }
+            }
+
+            inputFile.close();
+        } else {
+            cout << "Train not found." << endl;
+        }
+    }
+
+private:
+    void saveTrainData(const Train& train) {
+        ofstream file(getTrainDataFilePath(train.getTrainName()));
+        if (file.is_open()) {
+            file << train.getTrainName() << endl;
+            file << train.getSource() << endl;
+            file << train.getDestination() << endl;
+            file << train.getCapacity() << endl;
+            file << train.getAvailableSeats() << endl;
+            file.close();
+        } else {
+            cout << "Unable to open file for writing." << endl;
+        }
+    }
+
+    string getTrainDataFilePath(const string& trainName) const {
+        return trainName + ".txt";
+    }
+
+    void savePassengerData(const string& trainName, const Passenger& passenger) {
+        ofstream file(getTrainDataFilePath(trainName), ios::app);
+        if (file.is_open()) {
+            file << passenger.getName() << endl;
+            file << passenger.getGender() << endl;
+            file << passenger.getAge() << endl;
+            file.close();
+        } else {
+            cout << "Unable to open file for writing." << endl;
+        }
+    }
+
+    void updateAvailableSeats(const string& trainName, int availableSeats) {
+        fstream file(getTrainDataFilePath(trainName), ios::in | ios::out);
+        if (file.is_open()) {
+            string line;
+            for (int i = 0; i < 4; i++) {
+                getline(file, line); // Skip first four lines
+            }
+            file.seekp(file.tellg()); // Move write position to current read position
+            file << availableSeats << endl;
+            file.close();
+        } else {
+            cout << "Unable to open file for reading or writing." << endl;
+        }
+    }
+
+    void displayPassengerInfo(const Passenger& passenger) const {
+        cout << "Name: " << passenger.getName() << endl;
+        cout << "Gender: " << passenger.getGender() << endl;
+        cout << "Age: " << passenger.getAge() << endl;
+        cout << "---------------------" << endl;
+    }
+};
+
+int main() {
+    RailwayReservationSystem reservationSystem;
+
+    int choice;
+    do {
+        cout << "---------------------" << endl;
+        cout << "Railway Reservation System" << endl;
+        cout << "---------------------" << endl;
+        cout << "1. Add a train" << endl;
+        cout << "2. Book a ticket" << endl;
+        cout << "3. Display passenger list" << endl;
+        cout << "4. Exit" << endl;
+        cout << "---------------------" << endl;
+        cout << "Enter your choice: ";
+        cin >> choice;
+
+        switch (choice) {
+            case 1:
+                reservationSystem.addTrain();
+                break;
+            case 2:
+                reservationSystem.bookTicket();
+                break;
+            case 3:
+                reservationSystem.displayPassengerList();
+                break;
+            case 4:
+                cout << "Exiting the program." << endl;
+                break;
+            default:
+                cout << "Invalid choice. Please try again." << endl;
+        }
+
+        cout << endl;
+    } while (choice != 4);
+
+    return 0;
+}
